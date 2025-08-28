@@ -1,0 +1,21 @@
+local M = {}
+
+M.setup = function(opts)
+	require("femaco.config").set(opts)
+end
+
+-- // Proxy pattern
+
+-- require('texflow').config.<function>
+M.config = setmetatable({}, {
+	__index = function(_, k)
+		return require('femaco.config')[k]
+	end
+})
+
+-- require('texflow').<function>
+return setmetatable(M, {
+	__index = function(_, k)
+		return require('femaco.edit')[k]
+	end
+})
