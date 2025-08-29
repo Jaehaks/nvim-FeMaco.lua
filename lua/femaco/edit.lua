@@ -56,6 +56,36 @@ local function set_win_opts(lang, code)
 	return lines, opts
 end
 
+-- get range of node by line number
+---@param node TSNode parent node under cursor
+---@return number start_row in range
+---@return number end_row in range
+local function get_node_range(node)
+	local start_row, _, end_row, _ = node:range() -- get line number of range of code block
+	start_row    = start_row + 2	-- remove ```filetype
+	end_row      = end_row - 1      -- remove ```
+
+	return start_row, end_row
+end
+
+-- convert current cursor position to floating buffer
+---@param start_row number line number of original file
+---@return table cursor position {row, col} for floating buffer
+local function to_win_curpos(start_row)
+	local cursor_pos = vim.api.nvim_win_get_cursor(0) -- get cursor location (1,0) based
+	cursor_pos[1] = cursor_pos[1] - start_row + 1 	  -- change position to relative with floating buffer
+	return cursor_pos
+end
+
+-- convert current cursor position to original file
+---@param start_row number line number of original file
+---@return table cursor position {row, col} for original file
+local function to_file_curpos(start_row)
+	local cursor_pos = vim.api.nvim_win_get_cursor(0)
+	cursor_pos[1] = cursor_pos[1] + start_row - 1
+	return cursor_pos
+end
+
 -- open floating window with contents of code block
 ---@return femaco.details?
 local function open_float()
@@ -67,8 +97,10 @@ local function open_float()
 	end
 	local lang = Parser.get_childtext(node, 'language') or 'text'
 	local code = Parser.get_childtext(node, 'code_fence_content') or ''
-	local start_row, _, end_row, _ = node:range() -- get line number of range of code block
-	local file_bufnr = vim.api.nvim_get_current_buf() -- get bufnr .md
+	local start_row, end_row = get_node_range(node)
+	local file_bufnr = vim.api.nvim_get_current_buf() -- get bufnr for .md
+	local file_winid = vim.api.nvim_get_current_win() -- get winid for .md
+	local win_curpos = to_win_curpos(start_row)
 
 	-- create temp file path to connect with floating buffer
 	-- floating buffer has its actual file path to ensure proper operation of formatter/lsp
@@ -84,6 +116,7 @@ local function open_float()
 	vim.api.nvim_buf_set_name(bufnr, tmp_filepath)                   -- connect new buffer to tmp file name
 	local winid = vim.api.nvim_open_win(bufnr, true, winopts)        -- open window and enter
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)           -- fill the contents to buffer
+	vim.api.nvim_win_set_cursor(0, win_curpos)						 -- set cursor position
 
 	-- set options
 	vim.api.nvim_set_option_value('filetype', lang, { buf = bufnr })
@@ -103,11 +136,12 @@ local function open_float()
 	local details = {
 		lang         = lang,
 		file_bufnr   = file_bufnr,
+		file_winid   = file_winid,
 		win_bufnr    = bufnr,
 		win_winid    = winid,
 		win_filepath = tmp_filepath,
-		start_row    = start_row + 2, -- remove ```filetype
-		end_row      = end_row - 1,     -- remove ```
+		start_row    = start_row,
+		end_row      = end_row,
 	}
 	return details
 end
@@ -118,9 +152,11 @@ local function update_contents(details)
 	-- get contents of floating buffer
 	Utils.save_buf(details.win_bufnr)
 	local code = vim.api.nvim_buf_get_lines(details.win_bufnr, 0, -1, false)
+	local file_curpos = to_file_curpos(details.start_row)
 
 	-- set contents to original markdown file
 	vim.api.nvim_buf_set_lines(details.file_bufnr, details.start_row-1, details.end_row, false, code)
+	vim.api.nvim_win_set_cursor(details.file_winid, file_curpos)						 -- set cursor position
 end
 
 -- open code block with floating window
