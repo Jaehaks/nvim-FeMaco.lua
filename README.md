@@ -1,4 +1,9 @@
 # FeMaco
+
+> [!CAUTION]
+> The `main` branch is deprecated and provided for backward compatibility only.
+> All future updates happen on the [`development` branch](https://github.com/Jaehaks/nvim-FeMaco.lua/tree/development).
+
 :exclamation: Originally this was written for only markdown code blocks. However this plugin now support any language injection in any language!
 
 Catalyze your **Fe**nced **Ma**rkdown **Co**de-block editing!
