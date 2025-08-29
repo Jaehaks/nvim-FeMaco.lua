@@ -23,6 +23,7 @@ https://user-images.githubusercontent.com/23341710/182567238-e1f7bbcc-1f0c-43de-
 
 - `neovim v0.11+`
 	- It use native treesitter of neovim v0.11+
+- `markdown`, `markdown-inline` treesitter
 
 
 ## Installation
