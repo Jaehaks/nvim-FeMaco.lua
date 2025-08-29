@@ -2,6 +2,9 @@ local M = {}
 
 -- default configuration
 local default_config = {
+	window = {
+		fit_contents = false,
+	}
 }
 
 local config = vim.deepcopy(default_config)
