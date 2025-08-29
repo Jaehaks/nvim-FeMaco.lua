@@ -1,6 +1,7 @@
 local M = {}
 local Parser = require('femaco.parser')
 local Config = require('femaco.config')
+local Utils = require('femaco.utils')
 
 -- set window options to open floating window
 ---@param lang string content of language
@@ -70,15 +71,27 @@ local function open_float()
 
 	local start_row, _, end_row, _ = node:range() -- get line number of range of code block
 
+	-- create temp file path to connect with floating buffer
+	-- floating buffer has its actual file path to ensure proper operation of formatter/lsp
+	local sep, tmp_filepath = string.match(vim.fn.tempname(),'([\\/])([^\\/]+[\\/][^\\/]+)$')
+	tmp_filepath = 'FemacoTmp_' .. string.gsub(tmp_filepath, '[\\/]', '_')
+	tmp_filepath = vim.fn.getcwd() .. sep .. tmp_filepath -- make tmp file to work directory
+
 	-- set floating window options
 	local lines, winopts = set_win_opts(lang, code)
 
 	-- open floating window
-	local bufnr = vim.api.nvim_create_buf(false, true) -- set buffer temporarily
-	local winid = vim.api.nvim_open_win(bufnr, true, winopts) --  open window and enter
-	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+	local bufnr = vim.api.nvim_create_buf(false, false)              -- set buffer temporarily
+	vim.api.nvim_buf_set_name(bufnr, tmp_filepath)                   -- connect new buffer to tmp file name
+	local winid = vim.api.nvim_open_win(bufnr, true, winopts)        -- open window and enter
+	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)           -- fill the contents to buffer
+
+	-- set options
 	vim.api.nvim_set_option_value('filetype', lang, { buf = bufnr })
 	vim.api.nvim_set_option_value('signcolumn', 'no', { win = winid })
+
+	-- initial save to make actual temp file
+	Utils.save_buf(bufnr)
 
 	-- return window data
 	---@class femaco.details
@@ -93,6 +106,7 @@ local function open_float()
 		file_bufnr = file_bufnr,
 		win_bufnr = bufnr,
 		win_winid = winid,
+		win_filepath = tmp_filepath,
 		start_row = start_row + 2, -- remove ```filetype
 		end_row = end_row - 1,     -- remove ```
 	}
@@ -101,16 +115,13 @@ end
 
 -- save floating window and closed
 ---@param details femaco.details
-local function save_and_close(details)
+local function update_contents(details)
 	-- get contents of floating buffer
+	Utils.save_buf(details.win_bufnr)
 	local code = vim.api.nvim_buf_get_lines(details.win_bufnr, 0, -1, false)
 
 	-- set contents to original markdown file
 	vim.api.nvim_buf_set_lines(details.file_bufnr, details.start_row-1, details.end_row, false, code)
-
-	-- close window
-	vim.api.nvim_win_close(details.win_winid, true)
-	vim.api.nvim_buf_delete(details.win_bufnr, {force = true})
 end
 
 -- open code block with floating window
@@ -125,8 +136,28 @@ M.edit_code_block = function()
 
 	-- 'q' always save the window, you need to 'u' to undo after saved
 	vim.keymap.set('n', 'q', function ()
-		save_and_close(details)
+		vim.api.nvim_win_close(details.win_winid, true)
 	end, {buffer = details.win_bufnr, silent = true, desc = 'quit buffer'})
+
+	vim.api.nvim_create_autocmd({'WinClosed'}, {
+		buffer = details.win_bufnr,
+		callback = function ()
+			update_contents(details)
+		end
+	})
+
+	vim.api.nvim_create_autocmd({'BufHidden'}, {
+		buffer = details.win_bufnr,
+		callback = function ()
+			-- Delete tamp file
+			vim.uv.fs_unlink(details.win_filepath)
+			-- Release buffer from memory. It needs to delay because it takes some times for lsp's job is finished.
+			vim.defer_fn(function ()
+				vim.api.nvim_buf_delete(details.win_bufnr, {force = true})
+			end,1000)
+		end
+	})
+
 
 end
 
