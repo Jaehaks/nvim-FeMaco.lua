@@ -1,12 +1,12 @@
 local M = {}
 
+-- Check the node under cursor is target node
 ---@param target string target node name to check this region under cursor is the node
---- @return boolean Whether the node which is same with target exists.
 --- @return TSNode? Object of treesitter tree
 M.is_node = function(target)
 	local snode = vim.treesitter.get_node() -- get smallest node of current buffer and cursor
 	if not snode then
-		return false, nil
+		return nil
 	end
 
 	local node = nil
@@ -17,7 +17,7 @@ M.is_node = function(target)
 		snode = snode:parent()
 	end
 
-	return true, node
+	return node
 end
 
 return M
