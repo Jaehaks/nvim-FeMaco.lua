@@ -43,14 +43,13 @@ local function set_win_opts(lang, code)
 	-- set options of floating windows style
 	local opts = {
 		relative  = 'editor',
-		row       = row,            -- start of x(right) index from cursor
-		col       = col,            -- start of y(below) index from cursor
-		width     = width,          -- width of floating window
-		height    = height,         -- height of floating window
-		border    = 'rounded',      -- single round corner
+		row       = row,       -- start of x(right) index from cursor
+		col       = col,       -- start of y(below) index from cursor
+		width     = width,     -- width of floating window
+		height    = height,    -- height of floating window
+		border    = 'rounded', -- single round corner
 		title     = lang,      -- title in window border,
 		title_pos = 'left',
-		style 	  = 'minimal',      -- not show relative number / statuscolumn
 	}
 
 	return lines, opts
@@ -79,6 +78,7 @@ local function open_float()
 	local winid = vim.api.nvim_open_win(bufnr, true, winopts) --  open window and enter
 	vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 	vim.api.nvim_set_option_value('filetype', lang, { buf = bufnr })
+	vim.api.nvim_set_option_value('signcolumn', 'no', { win = winid })
 
 	-- return window data
 	---@class femaco.details
