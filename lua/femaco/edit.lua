@@ -48,7 +48,7 @@ local function set_win_opts(lang, code)
 		width     = width,          -- width of floating window
 		height    = height,         -- height of floating window
 		border    = 'rounded',      -- single round corner
-		title     = lang or 'None', -- title in window border,
+		title     = lang,      -- title in window border,
 		title_pos = 'left',
 		style 	  = 'minimal',      -- not show relative number / statuscolumn
 	}
@@ -65,7 +65,7 @@ local function open_float()
 		vim.notify('Femaco: Call in code-block section!', vim.log.levels.ERROR)
 		return
 	end
-	local lang = Parser.get_childtext(node, 'language') or ''
+	local lang = Parser.get_childtext(node, 'language') or 'text'
 	local code = Parser.get_childtext(node, 'code_fence_content') or ''
 	local file_bufnr = vim.api.nvim_get_current_buf() -- get bufnr .md
 
