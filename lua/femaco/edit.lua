@@ -67,9 +67,8 @@ local function open_float()
 	end
 	local lang = Parser.get_childtext(node, 'language') or 'text'
 	local code = Parser.get_childtext(node, 'code_fence_content') or ''
-	local file_bufnr = vim.api.nvim_get_current_buf() -- get bufnr .md
-
 	local start_row, _, end_row, _ = node:range() -- get line number of range of code block
+	local file_bufnr = vim.api.nvim_get_current_buf() -- get bufnr .md
 
 	-- create temp file path to connect with floating buffer
 	-- floating buffer has its actual file path to ensure proper operation of formatter/lsp
@@ -102,13 +101,13 @@ local function open_float()
 	---@field start_row number start line number of code block of original markdown file
 	---@field end_row number end line number of code block of original markdown file
 	local details = {
-		lang = lang,
-		file_bufnr = file_bufnr,
-		win_bufnr = bufnr,
-		win_winid = winid,
+		lang         = lang,
+		file_bufnr   = file_bufnr,
+		win_bufnr    = bufnr,
+		win_winid    = winid,
 		win_filepath = tmp_filepath,
-		start_row = start_row + 2, -- remove ```filetype
-		end_row = end_row - 1,     -- remove ```
+		start_row    = start_row + 2, -- remove ```filetype
+		end_row      = end_row - 1,     -- remove ```
 	}
 	return details
 end
@@ -157,8 +156,6 @@ M.edit_code_block = function()
 			end,1000)
 		end
 	})
-
-
 end
 
 
